@@ -9,6 +9,7 @@
 #include "MainComponent.h"
 #include "SpecifyRefresher.h"
 #include "GlobalRefresher.h"
+#include "AddHostnameDialog.h"
 
 
 //==============================================================================
@@ -36,7 +37,7 @@ MainComponent::MainComponent()
 		0.2 * window_width,
 		window_height - Y(globalDisk) - ( 4 * margin_top ) - ( 2 * default_height )
 	);
-	tbl.on_selected_row_changed = [&](int row) { update_specific(tbl[row].addres); };
+	tbl.on_selected_row_changed = [&](int row) { if(row >=0 ) update_specific(tbl[row].addres); };
 	addAndMakeVisible(tbl.table);
 
 	//Setting up global refresher
@@ -125,6 +126,54 @@ MainComponent::MainComponent()
 		out << serial.serialize();
 		out.close();
 
+		if (global_refresher.get() != nullptr)
+		{
+			while (!global_run.try_lock()) {}
+			global_refresher->join();
+			global_run.unlock();
+			global_refresher.reset(nullptr);
+		}
+		if (specify_refresher.get() != nullptr)
+		{
+			while (!specify_run.try_lock()) {}
+			specify_refresher->join();
+			specify_run.unlock();
+			specify_refresher.reset(nullptr);
+		}
+
+		if (tbl.data.size() > 0) global_refresher.reset(new std::thread(GlobalRefresher(this)));
+		tbl.table.selectRow(-1);
+		tbl.table.updateContent();
+	};
+	rem_address.setBounds(X(tbl.table), Y(tbl.table) + height(tbl.table) + margin_top, width(tbl.table) / 2, default_height);
+	rem_address.setButtonText(L"Usuñ");
+	addAndMakeVisible(rem_address);
+
+	add_address.onClick = [&]()
+	{
+		AddHostnameDialog dial;
+		if (dial.add == L"" || dial.hn == L"") return;
+
+		tbl.data.push_back({ dial.hn, dial.add });
+		
+		system(R"(ERASE C:\Users\raidg\Documents\hosts.json)");
+		json::value serial = json::value::object();
+		serial[L"len"] = json::value::number(tbl.data.size());
+		std::vector<json::value> vec;
+		vec.reserve(tbl.data.size());
+		for (const TableDemoComponent::hostname& var : tbl.data)
+		{
+			json::value tmp = json::value::object();
+			tmp[L"name"] = json::value::string(var.name);
+			tmp[L"address"] = json::value::string(var.addres);
+			vec.push_back(tmp);
+		}
+		serial[L"hostnames"] = json::value::array(vec);
+
+		std::wofstream out{ R"(C:\Users\raidg\Documents\hosts.json)" };
+		out << serial.serialize();
+		out.close();
+
 		tbl.table.updateContent();
 
 		if (global_refresher.get() != nullptr)
@@ -134,23 +183,40 @@ MainComponent::MainComponent()
 			global_run.unlock();
 			global_refresher.reset(nullptr);
 		}
+		if (specify_refresher.get() != nullptr)
+		{
+			while (!specify_run.try_lock()) {}
+			specify_refresher->join();
+			specify_run.unlock();
+			specify_refresher.reset(nullptr);
+		}
 
-		if(tbl.data.size() > 0) global_refresher.reset(new std::thread(GlobalRefresher(this)));
+		global_refresher.reset(new std::thread(GlobalRefresher(this)));
+		tbl.table.selectRow(-1);
+		tbl.table.updateContent();
+
 	};
-	rem_address.setBounds(X(tbl.table), Y(tbl.table) + height(tbl.table) + margin_top, width(tbl.table) / 2, default_height);
-	rem_address.setButtonText(L"Usuñ");
-	addAndMakeVisible(rem_address);
-
+	add_address.setBounds(X(tbl.table) + (width(tbl.table) / 2), Y(tbl.table) + height(tbl.table) + margin_top, width(tbl.table) / 2, default_height);
+	add_address.setButtonText(L"Dodaj");
+	addAndMakeVisible(add_address);
 }
 
 MainComponent::~MainComponent()
 {
-	while (!global_run.try_lock()) {}
-	global_refresher->join();
-	global_run.unlock();
-	while (!specify_run.try_lock()) {}
-	specify_refresher->join();
-	specify_run.unlock();
+	if (global_refresher.get() != nullptr)
+	{
+		while (!global_run.try_lock()) {}
+		global_refresher->join();
+		global_run.unlock();
+		global_refresher.reset(nullptr);
+	}
+	if(specify_refresher.get() != nullptr)
+	{
+		while (!specify_run.try_lock()) {}
+		specify_refresher->join();
+		specify_run.unlock();
+		specify_refresher.reset(nullptr);
+	}
 }
 
 int MainComponent::add_std_label(const std::wstring& caption, const int pos_x, const int pos_y, int width, int height)
