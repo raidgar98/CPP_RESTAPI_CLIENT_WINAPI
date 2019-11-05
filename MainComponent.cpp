@@ -34,7 +34,7 @@ MainComponent::MainComponent()
 		margin_left,
 		margin_top + Y(globalDisk) + height(globalDisk) + margin_top,
 		0.2 * window_width,
-		window_height - Y(globalDisk) - 100 - margin_top
+		window_height - Y(globalDisk) - ( 4 * margin_top ) - ( 2 * default_height )
 	);
 	tbl.on_selected_row_changed = [&](int row) { update_specific(tbl[row].addres); };
 	addAndMakeVisible(tbl.table);
@@ -42,7 +42,7 @@ MainComponent::MainComponent()
 	//Setting up global refresher
 	for (int i = 0; i < tbl.getNumRows(); i++)
 		addresses.push_back(tbl[i].addres);
-	global_refresher.reset(new std::thread(GlobalRefresher(this)));
+	if (tbl.data.size() > 0) global_refresher.reset(new std::thread(GlobalRefresher(this)));
 
 	const int alt_left_margin = margin_left + X(tbl.table) + width(tbl.table);
 	const int alt_top_margin = margin_top + Y(tbl.table);
@@ -59,7 +59,7 @@ MainComponent::MainComponent()
 	const int s_ip = add_std_label(L"Dostêpne Adresy IP:", alt_left_margin, alt_top_margin + 200);
 	const int s_choose_disk = add_std_label(L"Wybierz Dysk:", alt_left_margin, alt_top_margin + 225);
 	const int s_disk_capacity = add_std_label(L"Pojemnoœæ Dysku:", alt_left_margin, alt_top_margin + 250);
-	const int s_disk_free = add_std_label(L"Wolna Przestrzeñ:", alt_left_margin, alt_top_margin + 275);
+	const int s_disk_free = add_std_label(L"Zajêta Przestrzeñ:", alt_left_margin, alt_top_margin + 275);
 
 	//Specify TextEditors
 	configure_txt_editor(specProcModel, s_model_proc, L"Intel Core i5");
@@ -88,6 +88,58 @@ MainComponent::MainComponent()
 		window_width - X(labels[s_disk_free]) - width(labels[s_disk_free]) - (2 * margin_left),
 		default_height);
 	addAndMakeVisible(specDiskFree);
+	
+	specDisks.setBounds(
+		X(labels[s_choose_disk]) + margin_left + width(labels[s_choose_disk]),
+		Y(labels[s_choose_disk]),
+		window_width - X(labels[s_choose_disk]) - width(labels[s_choose_disk]) - (2 * margin_left),
+		default_height
+	);
+	addAndMakeVisible(specDisks);
+
+	//Address Buttons
+	rem_address.onClick = [&]()
+	{
+		int selected = tbl.table.getSelectedRow();
+		if (selected == -1) return;
+		auto it = tbl.data.begin();
+		for (int i = 0; i < selected; i++)
+			it++;
+		tbl.data.erase(it);
+
+		system(R"(ERASE C:\Users\raidg\Documents\hosts.json)");
+		json::value serial = json::value::object();
+		serial[L"len"] = json::value::number(tbl.data.size());
+		std::vector<json::value> vec;
+		vec.reserve(tbl.data.size());
+		for (const TableDemoComponent::hostname& var : tbl.data)
+		{
+			json::value tmp = json::value::object();
+			tmp[L"name"] = json::value::string(var.name);
+			tmp[L"address"] = json::value::string(var.addres);
+			vec.push_back(tmp);
+		}
+		serial[L"hostnames"] = json::value::array(vec);
+
+		std::wofstream out{ R"(C:\Users\raidg\Documents\hosts.json)" };
+		out << serial.serialize();
+		out.close();
+
+		tbl.table.updateContent();
+
+		if (global_refresher.get() != nullptr)
+		{
+			while (!global_run.try_lock()) {}
+			global_refresher->join();
+			global_run.unlock();
+			global_refresher.reset(nullptr);
+		}
+
+		if(tbl.data.size() > 0) global_refresher.reset(new std::thread(GlobalRefresher(this)));
+	};
+	rem_address.setBounds(X(tbl.table), Y(tbl.table) + height(tbl.table) + margin_top, width(tbl.table) / 2, default_height);
+	rem_address.setButtonText(L"Usuñ");
+	addAndMakeVisible(rem_address);
 
 }
 

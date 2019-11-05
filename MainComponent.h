@@ -20,7 +20,7 @@
 
 constexpr int max_amount_of_labels = 20;
 constexpr int window_width = 1000;
-constexpr int window_height = 600;
+constexpr int window_height = 400;
 constexpr int margin_top = 5;
 constexpr int margin_left = 5;
 constexpr int default_height = 20;
@@ -56,7 +56,7 @@ public:
 	Label labels[max_amount_of_labels];
 	int amount_of_labels = 0;
 
-	const Font std_font = Font( "Consolas", 16.0, Font::FontStyleFlags::plain );
+	const Font std_font = Font( "Consolas", 15.0, Font::FontStyleFlags::plain );
 
 	//Globals
 	progress_bar(globalProcessor);
@@ -71,6 +71,9 @@ public:
 	std::vector<str> addresses;
 	std::mutex mtx_addresses;
 
+	TextButton add_address;
+	TextButton rem_address;
+
 	text_box(specProcModel);
 	text_box(specProcCores);
 	progress_bar(specProcessorUsage);
@@ -80,7 +83,7 @@ public:
 	text_box(specOSVersion);
 	text_box(specOSSPVersion);
 	text_box(specIP);
-	text_box(specDisks);
+	ComboBox specDisks;
 	text_box(specDiskCapacity);
 	progress_bar(specDiskFree);
 

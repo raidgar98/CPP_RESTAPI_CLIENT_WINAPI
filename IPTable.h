@@ -66,10 +66,14 @@ public:
 		hostname(const hostname&) = default;
 		hostname(hostname&&) = default;
 		hostname() = default;
+		hostname& operator=(const hostname&) = default;
+		hostname& operator=(hostname&&) = default;
+
 		std::wstring to_wstring() const
 		{
 			return name + L" [" + addres + L"]";
 		}
+
 		operator std::wstring()
 		{
 			return to_wstring();
@@ -85,11 +89,11 @@ public:
 	std::function<void(int)> on_selected_row_changed = [](int) {};
 
 	hostname operator[](const int row) { if (row >= data.size() || row < 0) return hostname(L"", L""); else return data[row]; }
+	std::vector<hostname> data;
 
 private:
 
 	Font font{ 14.0f };
-	std::vector<hostname> data;
 	
 	void loadData()
 	{
