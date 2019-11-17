@@ -73,6 +73,7 @@ public:
 
 	TextButton add_address;
 	TextButton rem_address;
+	TextButton sync_files;
 
 	text_box(specProcModel);
 	text_box(specProcCores);

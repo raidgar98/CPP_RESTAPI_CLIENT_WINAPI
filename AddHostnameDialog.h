@@ -17,21 +17,32 @@ public:
 	AddHostnameDialog()
 	{
 		p.reset(create());
-		p->setSize(250, 150);
+		p->setSize(250, 50);
 
 		l1.setText(L"Nazwa Hosta:", NotificationType::dontSendNotification);
 		l1.setBounds(10, 10, 100, 25);
+		l1.setFont(Font("Consolas", 15.0, Font::FontStyleFlags::plain));
+		l1.setColour(Label::ColourIds::textColourId, Colour::fromRGBA(0, 0, 0, 255));
 		hostname.setBounds(125, 10, 110, 25);
 
 		l2.setText(L"Adres IP:", NotificationType::dontSendNotification);
 		l2.setBounds(10, 50, 100, 25);
+		l2.setFont(Font("Consolas", 15.0, Font::FontStyleFlags::plain));
+		l2.setColour(Label::ColourIds::textColourId, Colour::fromRGBA(0, 0, 0, 255));
 		address.setBounds(125, 50, 110, 25);
 
-		p->addAndMakeVisible(l1);
-		p->addAndMakeVisible(l2);
-		p->addAndMakeVisible(hostname);
-		p->addAndMakeVisible(address);
-		
+		p->setContentOwned(&l1, false);
+		p->setContentOwned(&l2, false);
+		p->setContentOwned(&hostname, false);
+		p->setContentOwned(&address, false);
+		l1.setVisible(true);
+		l2.setVisible(true);
+		hostname.setVisible(true);
+		address.setVisible(true);
+		//p->addAndMakeVisible(l1);
+		//p->addAndMakeVisible(l2);
+		//p->addAndMakeVisible(hostname);
+		//p->addAndMakeVisible(address);
 		p->enterModalState(true, nullptr, false);
 
 		int res = p->runModalLoop();

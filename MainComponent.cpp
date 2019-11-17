@@ -1,4 +1,4 @@
-/*
+ï»¿/*
   ==============================================================================
 
 	This file was auto-generated!
@@ -11,6 +11,14 @@
 #include "GlobalRefresher.h"
 #include "AddHostnameDialog.h"
 
+#include <future>
+#include <chrono>
+#include <ctime>
+#include <Windows.h>
+
+#include <cpprest/http_client.h>
+#include <cpprest/filestream.h>
+
 
 //==============================================================================
 MainComponent::MainComponent()
@@ -18,9 +26,9 @@ MainComponent::MainComponent()
 	setSize(window_width, window_height);
 
 	//Global Labels
-	add_std_label(L"Œrednie Obci¹¿enie Procesora", margin_left + 0, margin_top + 0);
-	add_std_label(L"Œrednie U¿ycie Pamiêci", margin_left + 0, margin_top + 25);
-	add_std_label(L"Œrednie U¿ycie Dysków", margin_left + 0, margin_top + 50);
+	add_std_label(L"Åšrednie ObciÄ…Å¼enie Procesora", margin_left + 0, margin_top + 0);
+	add_std_label(L"Åšrednie UÅ¼ycie PamiÄ™ci", margin_left + 0, margin_top + 25);
+	add_std_label(L"Åšrednie UÅ¼ycie DyskÃ³w", margin_left + 0, margin_top + 50);
 
 	//Global Progress Bars
 	globalProcessor.setBounds(margin_left + width(labels[0]) + 20, margin_top + Y(labels[0]) - 5, window_width - width(labels[0]) - default_height - 10 - margin_left, default_height);
@@ -50,17 +58,17 @@ MainComponent::MainComponent()
 
 	//Specify Labels
 	const int s_model_proc = add_std_label(L"Model Procesora:", alt_left_margin, alt_top_margin);
-	const int s_cores = add_std_label(L"Iloœæ Rdzenii Procesora:", alt_left_margin, alt_top_margin + 25);
-	const int s_processor_usage = add_std_label(L"Obci¹¿enie Procesora:", alt_left_margin, alt_top_margin + 50);
-	const int s_ram_capacity = add_std_label(L"Ca³kowita Pojemnoœæ Pamiêci Fizycznej:", alt_left_margin, alt_top_margin + 75);
-	const int s_ram_usage = add_std_label(L"U¿ycie Pamiêci Fizycznej:", alt_left_margin, alt_top_margin + 100);
+	const int s_cores = add_std_label(L"IloÅ›Ä‡ Rdzenii Procesora:", alt_left_margin, alt_top_margin + 25);
+	const int s_processor_usage = add_std_label(L"ObciÄ…Å¼enie Procesora:", alt_left_margin, alt_top_margin + 50);
+	const int s_ram_capacity = add_std_label(L"CaÅ‚kowita PojemnoÅ›Ä‡ PamiÄ™ci Fizycznej:", alt_left_margin, alt_top_margin + 75);
+	const int s_ram_usage = add_std_label(L"UÅ¼ycie PamiÄ™ci Fizycznej:", alt_left_margin, alt_top_margin + 100);
 	const int s_os = add_std_label(L"System Operacyjny:", alt_left_margin, alt_top_margin + 125);
 	const int s_os_ver = add_std_label(L"Wersja Systemu Operacyjnego:", alt_left_margin, alt_top_margin + 150);
 	const int s_sp_ver = add_std_label(L"Wersja Service Pack'a Systemu Operacyjnego", alt_left_margin, alt_top_margin + 175);
-	const int s_ip = add_std_label(L"Dostêpne Adresy IP:", alt_left_margin, alt_top_margin + 200);
+	const int s_ip = add_std_label(L"DostÄ™pne Adresy IP:", alt_left_margin, alt_top_margin + 200);
 	const int s_choose_disk = add_std_label(L"Wybierz Dysk:", alt_left_margin, alt_top_margin + 225);
-	const int s_disk_capacity = add_std_label(L"Pojemnoœæ Dysku:", alt_left_margin, alt_top_margin + 250);
-	const int s_disk_free = add_std_label(L"Zajêta Przestrzeñ:", alt_left_margin, alt_top_margin + 275);
+	const int s_disk_capacity = add_std_label(L"PojemnoÅ›Ä‡ Dysku:", alt_left_margin, alt_top_margin + 250);
+	const int s_disk_free = add_std_label(L"ZajÄ™ta PrzestrzeÅ„:", alt_left_margin, alt_top_margin + 275);
 
 	//Specify TextEditors
 	configure_txt_editor(specProcModel, s_model_proc, L"Intel Core i5");
@@ -145,8 +153,8 @@ MainComponent::MainComponent()
 		tbl.table.selectRow(-1);
 		tbl.table.updateContent();
 	};
-	rem_address.setBounds(X(tbl.table), Y(tbl.table) + height(tbl.table) + margin_top, width(tbl.table) / 2, default_height);
-	rem_address.setButtonText(L"Usuñ");
+	rem_address.setBounds(X(tbl.table), Y(tbl.table) + height(tbl.table) + margin_top, ( width(tbl.table) / 2 ) * 0.8, default_height);
+	rem_address.setButtonText(L"UsuÅ„");
 	addAndMakeVisible(rem_address);
 
 	add_address.onClick = [&]()
@@ -196,9 +204,64 @@ MainComponent::MainComponent()
 		tbl.table.updateContent();
 
 	};
-	add_address.setBounds(X(tbl.table) + (width(tbl.table) / 2), Y(tbl.table) + height(tbl.table) + margin_top, width(tbl.table) / 2, default_height);
+	add_address.setBounds(X(rem_address) + width(rem_address) + 5, Y(tbl.table) + height(tbl.table) + margin_top, width(rem_address), default_height);
 	add_address.setButtonText(L"Dodaj");
 	addAndMakeVisible(add_address);
+
+	sync_files.onClick = [&]() {
+
+		std::string s(255, '\0');
+		std::time_t now = std::chrono::system_clock::to_time_t(std::chrono::system_clock::now());
+		std::strftime(&s[0], s.size(), "%Y_%m_%d", std::localtime(&now));
+		std::wstring w;
+		w.reserve(s.size());
+		for (const auto var : s)
+			w += static_cast<wchar_t>(var);
+
+		std::string x = R"(C:\Users\raidg\Downloads\Pobrane_Raporty\)";
+		x += s;
+		LPCSTR t = x.c_str();
+		CreateDirectoryA(t, NULL);
+
+		for (const auto& var : tbl.data)
+			std::async(std::launch::async, [&](const TableDemoComponent::hostname& address, const std::wstring& dirname)
+				{
+					client::http_client client{ L"http://" + address.addres + L":9000/file/raport" };
+					http_response res;
+					try { res = client.request(methods::GET).get(); }
+					catch (const http_exception& e)
+					{
+						throw;
+					}
+					Concurrency::streams::ostream fileStream;
+					std::wstringstream path_to_create;
+					path_to_create << dirname << L"\\" << address.name << L".xlsx";
+					auto t = path_to_create.str();
+					std::wstring path;
+					for (const auto& var : t)
+						if (var != L'\0') path += var;
+					try { fileStream = Concurrency::streams::fstream::open_ostream(path).get(); }
+					catch (const std::exception & e)
+					{
+						throw;
+					}
+					int ret = 1;
+					while (ret > 0)
+						try { ret = res.body().read_to_end(fileStream.streambuf()).get(); } //256MB max
+					catch (const std::exception & e)
+					{
+						throw;
+					}
+					fileStream.close();
+			}, var, LR"(C:\Users\raidg\Downloads\Pobrane_Raporty\)" + w);
+	};
+	sync_files.setBounds(
+		X(add_address) + width(add_address) + 5,
+		Y(tbl.table) + height(tbl.table) + margin_top,
+		width(tbl.table) - (width(add_address) + width(rem_address) + 10),
+		default_height);
+	sync_files.setButtonText(L"O");
+	addAndMakeVisible(sync_files);
 }
 
 MainComponent::~MainComponent()
