@@ -19,6 +19,8 @@ using namespace web::http::client;
 
 #define chck_close(x) if(src->specify_run.try_lock()){ src->specify_run.unlock(); x; } else return;
 
+using str = std::wstring;
+
 class SpecifyRefresher : public BasicRefresher
 {
 private:
@@ -162,7 +164,7 @@ public:
 		while (src->specify_run.try_lock())
 		{
 			src->specify_run.unlock();
-
+			
 			//Disks
 			if (disk_idx != src->specDisks.getSelectedId())
 			{

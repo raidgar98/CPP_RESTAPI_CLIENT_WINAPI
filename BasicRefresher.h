@@ -17,12 +17,15 @@ protected:
 
 	MainComponent* src{ nullptr };
 	std::vector<std::wstring> address_pool;
+	std::map<std::wstring, uint16_t> reconnections;
 	
 	BasicRefresher(MainComponent* i_src) : src{ i_src }
 	{
 		while (!src->mtx_addresses.try_lock()) { std::this_thread::yield(); }
 		address_pool = src->addresses; 
 		src->mtx_addresses.unlock();
+		for (const auto& var : address_pool)
+			reconnections[var] = 0;
 	}
 
 	pplx::task<void> POST_request(const std::wstring& host, const std::wstring& uri, json::value& in_out) const
@@ -44,6 +47,18 @@ protected:
 	}
 
 public:
+
+	static bool online(const std::wstring& host)
+	{
+		try {
+			return http_client(host).request(methods::GET, L"/api").get().status_code() == status_codes::OK;
+		}
+		catch (const std::exception & e)
+		{
+			throw;
+		}
+	}
+
 
 	virtual void operator()() = 0;
 

@@ -12,7 +12,7 @@ class GlobalRefresher : private BasicRefresher
 {
 private:
 
-	double disk_usage() const
+	double disk_usage()
 	{
 		json::value data;
 		double ret = 0.0;
@@ -26,7 +26,7 @@ private:
 		return 1.0 - ret;
 	}
 
-	double processor_usage() const
+	double processor_usage()
 	{
 		json::value data;
 		double ret = 0.0;
@@ -40,13 +40,13 @@ private:
 		return ret;
 	}
 
-	double memory_usage() const
+	double memory_usage()
 	{
 		json::value data;
 		double ret = 0.0;
 		for (const auto& var : address_pool)
 		{
-			try { GET_request(L"http://" + var + L":8080", L"/api/mem/used", data).wait(); }
+			try { GET_request(L"http://" + var + L":9001", L"/api/mem/used", data).wait(); }
 			catch (...) { continue; }
 			if (data.is_null()) continue;
 			ret = (ret + data[L"used"].as_double()) / (ret == 0 ? 1.0 : 2.0);

@@ -3,6 +3,8 @@
 #include <cpprest/json.h>
 #include <fstream>
 
+#include "../../NewProject/Source/BasicRefresher.h"
+
 using str = std::wstring;
 
 class TableDemoComponent : public Component,
@@ -105,12 +107,15 @@ private:
 			whole += line;
 		file.close();
 		json::value dat = json::value::parse(whole);
-		const int length = dat[L"len"].as_integer();
+		const int length = dat[L"hostnames"].as_array().size();
 		data.reserve(length);
 		for (int i = 0; i < length; i++)
 		{
 			json::value tmp = dat[L"hostnames"].as_array()[i];
-			data.emplace_back(hostname(tmp[L"name"].as_string(), tmp[L"address"].as_string()));
+			int j = 0;
+			for (; j < 5; j++)
+				if (BasicRefresher::online(L"http://" + tmp[L"address"].as_string() + L":9001")) break; else std::this_thread::yield();
+			if( j <= 4 ) data.emplace_back(hostname(tmp[L"name"].as_string(), tmp[L"address"].as_string()));
 		}
 	}
 
